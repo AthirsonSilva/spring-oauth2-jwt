@@ -1,0 +1,19 @@
+version: '2'
+
+services:
+    mongodb-dev-primary:
+        container_name: mongodb-dev
+        image: 'bitnami/mongodb:latest'
+        ports:
+            - "27017:27017"
+        volumes:
+            - ./mongodb_data:/home/azilzor/bitnami
+        environment:
+            - MONGODB_ADVERTISED_HOSTNAME=localhost
+            - MONGODB_USERNAME=user
+            - MONGODB_PASSWORD=password
+            - MONGODB_DATABASE=oauth2
+            - MONGODB_REPLICA_SET_MODE=primary
+            - MONGODB_ROOT_PASSWORD=@Potter77
+            - MONGODB_REPLICA_SET_KEY=replicasetkey123
+            - MONGODB_REPLICA_SET_NAME=rs1

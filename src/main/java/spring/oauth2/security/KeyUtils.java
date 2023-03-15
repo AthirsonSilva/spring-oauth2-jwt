@@ -1,8 +1,8 @@
 package spring.oauth2.security;
 
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -21,8 +21,8 @@ import java.util.Arrays;
 import java.util.Objects;
 
 @Component
-@RequiredArgsConstructor(onConstructor = @__(@Value))
 @Slf4j
+@RequiredArgsConstructor
 public class KeyUtils {
     private final Environment environment;
 
@@ -31,6 +31,7 @@ public class KeyUtils {
 
     @Value("${access-token.public}")
     private String accessTokenPublicKeyPath;
+
     @Value("${refresh-token.private}")
     private String refreshTokenPrivateKeyPath;
 
@@ -42,25 +43,26 @@ public class KeyUtils {
 
     private KeyPair getAccessTokenKeyPair() {
         if (Objects.isNull(_accessTokenKeyPair)) {
-            _accessTokenKeyPair = getKeyPair(accessTokenPrivateKeyPath, accessTokenPublicKeyPath);
+            _accessTokenKeyPair = getKeyPair(accessTokenPublicKeyPath, accessTokenPrivateKeyPath);
         }
-
         return _accessTokenKeyPair;
     }
 
     private KeyPair getRefreshTokenKeyPair() {
         if (Objects.isNull(_refreshTokenKeyPair)) {
-            _refreshTokenKeyPair = getKeyPair(refreshTokenPrivateKeyPath, refreshTokenPublicKeyPath);
+            _refreshTokenKeyPair = getKeyPair(refreshTokenPublicKeyPath, refreshTokenPrivateKeyPath);
         }
-
         return _refreshTokenKeyPair;
     }
 
     private KeyPair getKeyPair(String publicKeyPath, String privateKeyPath) {
+        KeyPair keyPair;
+
         File publicKeyFile = new File(publicKeyPath);
         File privateKeyFile = new File(privateKeyPath);
 
         if (publicKeyFile.exists() && privateKeyFile.exists()) {
+            log.info("loading keys from file: {}, {}", publicKeyPath, privateKeyPath);
             try {
                 KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 
@@ -72,30 +74,30 @@ public class KeyUtils {
                 PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
                 PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
 
-                return new KeyPair(publicKey, privateKey);
+                keyPair = new KeyPair(publicKey, privateKey);
+                return keyPair;
             } catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException e) {
                 throw new RuntimeException(e);
             }
         } else {
             if (Arrays.asList(environment.getActiveProfiles()).contains("prod")) {
-                throw new RuntimeException("Public and Private key does not exist");
+                throw new RuntimeException("public and private keys don't exist");
             }
         }
 
         File directory = new File("access-refresh-token-keys");
         if (!directory.exists()) {
-            boolean mkdirs = directory.mkdirs();
+            boolean tokensDirectory = directory.mkdirs();
 
-            if (!mkdirs) {
-                throw new RuntimeException("Unable to create directory");
+            if (!tokensDirectory) {
+                throw new RuntimeException("Failed to create directory: " + directory.getAbsolutePath());
             }
         }
-
         try {
+            log.info("Generating new public and private keys: {}, {}", publicKeyPath, privateKeyPath);
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(2048);
-            KeyPair keyPair = keyPairGenerator.generateKeyPair();
-
+            keyPair = keyPairGenerator.generateKeyPair();
             try (FileOutputStream fos = new FileOutputStream(publicKeyPath)) {
                 X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyPair.getPublic().getEncoded());
                 fos.write(keySpec.getEncoded());
@@ -109,19 +111,19 @@ public class KeyUtils {
             throw new RuntimeException(e);
         }
 
-        return getKeyPair(publicKeyPath, privateKeyPath);
+        return keyPair;
     }
 
     public RSAPublicKey getAccessTokenPublicKey() {
         return (RSAPublicKey) getAccessTokenKeyPair().getPublic();
     }
 
-    public RSAPublicKey getRefreshTokenPublicKey() {
-        return (RSAPublicKey) getRefreshTokenKeyPair().getPublic();
-    }
-
     public RSAPrivateKey getAccessTokenPrivateKey() {
         return (RSAPrivateKey) getAccessTokenKeyPair().getPrivate();
+    }
+
+    public RSAPublicKey getRefreshTokenPublicKey() {
+        return (RSAPublicKey) getRefreshTokenKeyPair().getPublic();
     }
 
     public RSAPrivateKey getRefreshTokenPrivateKey() {

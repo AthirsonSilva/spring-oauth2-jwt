@@ -1,7 +1,19 @@
 access-token:
-    private: ${ACCESS_TOKEN_PRIVATE_KEY_PATH}
-    public: ${ACCESS_TOKEN_PUBLIC_KEY_PATH}
+    private: "access-refresh-token-keys/access-token-private.key"
+    public: "access-refresh-token-keys/access-token-public.key"
 
 refresh-token:
-    private: ${REFRESH_TOKEN_PRIVATE_KEY_PATH}
-    public: ${REFRESH_TOKEN_PUBLIC_KEY_PATH}
+    private: "access-refresh-token-keys/refresh-token-private.key"
+    public: "access-refresh-token-keys/refresh-token-public.key"
+
+spring:
+    profiles:
+        active: dev
+    data:
+        mongodb:
+            uri: mongodb://localhost:27017
+            database: oauth2
+
+logging:
+    level:
+      org.springframework.security: DEBUG
