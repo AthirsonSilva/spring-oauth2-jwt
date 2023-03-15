@@ -2,6 +2,7 @@ package spring.oauth2.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -21,18 +22,19 @@ import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor(onConstructor = @__(@Value))
+@Slf4j
 public class KeyUtils {
     private final Environment environment;
 
-    @Value("access-token.private")
+    @Value("${access-token.private}")
     private String accessTokenPrivateKeyPath;
 
-    @Value("access-token.public")
+    @Value("${access-token.public}")
     private String accessTokenPublicKeyPath;
-    @Value("refresh-token.private")
+    @Value("${refresh-token.private}")
     private String refreshTokenPrivateKeyPath;
 
-    @Value("refresh-token.public")
+    @Value("${refresh-token.public}")
     private String refreshTokenPublicKeyPath;
 
     private KeyPair _accessTokenKeyPair;
